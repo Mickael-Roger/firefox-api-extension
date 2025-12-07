@@ -110,6 +110,11 @@ When a tag starting with 'v' (e.g., `v1.0.0`) is pushed to the repository:
 2. The native host files are packaged into a tarball
 3. Both the extension (.xpi/.zip) and native host package are attached to the GitHub release
 
+### Prerequisites
+
+- Node.js 18 or later
+- npm (usually comes with Node.js)
+
 ### Manual Building
 
 To build the extension locally:
