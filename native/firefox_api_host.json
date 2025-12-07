@@ -1,0 +1,7 @@
+{
+  "name": "firefox_api_extension",
+  "description": "Native host for Firefox REST API extension",
+  "path": "/home/mickael/Documents/Dev/firefox-api-extension/native/native_host.js",
+  "type": "stdio",
+  "allowed_extensions": ["firefox-api-extension@example.com"]
+}

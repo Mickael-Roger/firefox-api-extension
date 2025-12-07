@@ -1,0 +1,26 @@
+{
+  "manifest_version": 2,
+  "name": "Firefox REST API",
+  "version": "1.0",
+  "description": "Exposes a REST API for managing windows and tabs",
+  "permissions": [
+    "tabs",
+    "activeTab",
+    "nativeMessaging",
+    "storage"
+  ],
+  "data_collection_permissions": "optional",
+  "options_ui": {
+    "page": "options.html",
+    "browser_style": true
+  },
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "firefox-api-extension@example.com"
+    }
+  }
+}
