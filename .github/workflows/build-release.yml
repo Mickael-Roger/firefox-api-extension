@@ -62,6 +62,22 @@ jobs:
           exit 1
         fi
     
+    - name: Create both ZIP and XPI artifacts
+      run: |
+        ZIP_FILE="web-ext-artifacts/firefox-api-extension-v${{ steps.version.outputs.version }}.zip"
+        XPI_FILE="web-ext-artifacts/firefox-api-extension-v${{ steps.version.outputs.version }}.xpi"
+        if [ -f "$ZIP_FILE" ] && [ ! -f "$XPI_FILE" ]; then
+          cp "$ZIP_FILE" "$XPI_FILE"
+          echo "Created XPI artifact from ZIP"
+        fi
+        if [ -f "$XPI_FILE" ] && [ ! -f "$ZIP_FILE" ]; then
+          cp "$XPI_FILE" "$ZIP_FILE"
+          echo "Created ZIP artifact from XPI"
+        fi
+        if [ -f "$ZIP_FILE" ] && [ -f "$XPI_FILE" ]; then
+          echo "Both ZIP and XPI artifacts already exist"
+        fi
+    
     - name: Create native host package
       run: |
         mkdir -p native-package
@@ -97,4 +113,3 @@ jobs:
         prerelease: false
         files: |
           web-ext-artifacts/firefox-api-extension-v${{ steps.version.outputs.version }}.*
-          native-host-v${{ steps.version.outputs.version }}.tar.gz

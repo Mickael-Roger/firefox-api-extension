@@ -1,0 +1,238 @@
+# SPDX-License-Identifier: Apache-2.0
+openapi: 3.1.0
+info:
+  title: Firefox REST API Extension
+  description: REST API for managing Firefox browser windows and tabs via local HTTP server
+  version: 1.0.0
+  license:
+    name: Apache 2.0
+    url: https://opensource.org/licenses/Apache-2.0
+
+servers:
+  - url: http://localhost:8090
+    description: Default localhost server (port configurable via extension options)
+
+tags:
+  - name: Windows
+    description: Manage browser windows
+  - name: Tabs
+    description: Manage browser tabs
+
+paths:
+  /windows:
+    get:
+      tags:
+        - Windows
+      summary: Get all windows and their tabs
+      description: Returns information about all browser windows and the tabs they contain
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Window'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /tabs:
+    get:
+      tags:
+        - Tabs
+      summary: Get all tabs across all windows
+      description: Returns information about all tabs across all browser windows
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tab'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /switch-tab:
+    post:
+      tags:
+        - Tabs
+      summary: Switch to a specific tab
+      description: Activates the tab with the given ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SwitchTabRequest'
+      responses:
+        '200':
+          description: Tab successfully switched
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Tab switched
+        '400':
+          description: Bad request - missing or invalid tabId
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Missing or invalid tabId
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /open-url:
+    post:
+      tags:
+        - Tabs
+      summary: Open a URL in a new tab
+      description: Opens the given URL in a new tab, optionally in a specific window
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenUrlRequest'
+      responses:
+        '200':
+          description: URL successfully opened
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Tab opened
+        '400':
+          description: Bad request - missing URL
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Missing url
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  schemas:
+    Window:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the window
+          example: 1
+        focused:
+          type: boolean
+          description: Whether the window is currently focused
+          example: true
+        type:
+          type: string
+          description: Type of window (normal, popup, panel, etc.)
+          example: normal
+        tabs:
+          type: array
+          description: Tabs contained in this window
+          items:
+            $ref: '#/components/schemas/Tab'
+      required:
+        - id
+        - focused
+        - type
+        - tabs
+
+    Tab:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for the tab
+          example: 123
+        windowId:
+          type: integer
+          description: ID of the window containing this tab
+          example: 1
+        index:
+          type: integer
+          description: Zero-based index of the tab within its window
+          example: 0
+        title:
+          type: string
+          description: Title of the web page in the tab
+          example: Example Domain
+        url:
+          type: string
+          description: URL of the web page in the tab
+          example: 'https://example.com'
+        active:
+          type: boolean
+          description: Whether the tab is currently active in its window
+          example: true
+      required:
+        - id
+        - windowId
+        - index
+        - title
+        - url
+        - active
+
+    SwitchTabRequest:
+      type: object
+      properties:
+        tabId:
+          type: integer
+          description: ID of the tab to switch to
+          example: 123
+      required:
+        - tabId
+
+    OpenUrlRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          description: URL to open
+          example: 'https://example.com'
+        windowId:
+          type: integer
+          description: Optional ID of the window to open the tab in
+          example: 2
+      required:
+        - url
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized - invalid or missing API token
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: 'Unauthorized: Invalid or missing API token'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: 'Internal Server Error'
+
+  securitySchemes:
+    ApiTokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Bearer token authentication. Token can also be provided in X-API-Token header. Configure token in extension options page (optional).
+
+security:
+  - ApiTokenAuth: []
