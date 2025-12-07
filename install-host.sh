@@ -1,4 +1,5 @@
 #!/bin/bash
+# SPDX-License-Identifier: Apache-2.0
 set -e
 
 HOST_NAME="firefox_api_extension"
@@ -23,7 +24,7 @@ fi
 mkdir -p "$TARGET_DIR"
 
 # Create manifest with correct path
-cat "$MANIFEST_SOURCE" | sed "s|/home/mickael/Documents/Dev/firefox-api-extension/native/native_host.js|$NATIVE_HOST_PATH|g" > "$TARGET_FILE"
+cat "$MANIFEST_SOURCE" | sed "s|@NATIVE_HOST_PATH@|$NATIVE_HOST_PATH|g" > "$TARGET_FILE"
 
 # Ensure native host is executable
 chmod +x "$NATIVE_HOST_PATH"

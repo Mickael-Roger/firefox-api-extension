@@ -1,0 +1,97 @@
+name: Build and Release Extension
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on tags starting with 'v'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Update manifest version from tag
+      if: startsWith(github.ref, 'refs/tags/v')
+      run: |
+        TAG_VERSION="${GITHUB_REF#refs/tags/v}"
+        echo "Updating manifest.json version to $TAG_VERSION"
+        jq --arg version "$TAG_VERSION" '.version = $version' manifest.json > manifest.json.tmp
+        mv manifest.json.tmp manifest.json
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Lint extension
+      run: npm run lint
+    
+    - name: Extract version from manifest
+      id: version
+      run: |
+        VERSION=$(node -p "require('./manifest.json').version")
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Extension version: $VERSION"
+    
+    - name: Build extension
+      run: npm run build
+      env:
+        WEB_EXT_SOURCE_DIR: .
+    
+    - name: Rename build artifact
+      run: |
+        # Find the built extension file
+        BUILD_FILE=$(ls -1 web-ext-artifacts/*.zip 2>/dev/null || ls -1 web-ext-artifacts/*.xpi 2>/dev/null || echo "")
+        if [ -n "$BUILD_FILE" ]; then
+          EXT="${BUILD_FILE##*.}"
+          mv "$BUILD_FILE" "web-ext-artifacts/firefox-api-extension-v${{ steps.version.outputs.version }}.$EXT"
+        else
+          echo "No build artifact found"
+          exit 1
+        fi
+    
+    - name: Create native host package
+      run: |
+        mkdir -p native-package
+        cp -r native/ native-package/
+        cp install-host.sh native-package/
+        cp README.md native-package/
+        # Ensure scripts are executable
+        chmod +x native-package/native/native_host.js
+        chmod +x native-package/install-host.sh
+        cd native-package
+        tar -czvf ../native-host-v${{ steps.version.outputs.version }}.tar.gz .
+        cd ..
+        echo "Native host package created"
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: firefox-api-extension-v${{ steps.version.outputs.version }}
+        path: |
+          web-ext-artifacts/
+          native-host-v${{ steps.version.outputs.version }}.tar.gz
+        retention-days: 7
+    
+    - name: Create GitHub Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: Firefox API Extension ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+        files: |
+          web-ext-artifacts/firefox-api-extension-v${{ steps.version.outputs.version }}.*
+          native-host-v${{ steps.version.outputs.version }}.tar.gz

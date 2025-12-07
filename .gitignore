@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+*.zip
+*.xpi
+dist/
+
+# Runtime data
+web-ext.log
+web-ext-test.log
+*.log
+
+# Test scripts
+test.sh
+test2.sh
+test3.sh
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+tmp/
+temp/

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 const HOST_NAME = 'firefox_api_extension';
 let port = null;
 let config = {

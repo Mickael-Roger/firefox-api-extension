@@ -3,13 +3,18 @@
   "version": "1.0.0",
   "main": "background.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "web-ext lint",
+    "build": "web-ext build --overwrite-dest"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "description": "",
   "devDependencies": {
     "web-ext": "^9.2.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
   }
 }

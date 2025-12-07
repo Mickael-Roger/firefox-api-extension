@@ -99,6 +99,40 @@ If an API token is set in the options:
 
 You can change the port via the options page, or edit `native/native_host.js` and change the default `port` in the config object (line 8). Ensure the port is free.
 
+## Building and Releasing
+
+This project uses GitHub Actions to automatically build and release the extension when a new tag is pushed.
+
+### Automated Builds
+
+When a tag starting with 'v' (e.g., `v1.0.0`) is pushed to the repository:
+1. The GitHub Actions workflow builds the extension using `web-ext`
+2. The native host files are packaged into a tarball
+3. Both the extension (.xpi/.zip) and native host package are attached to the GitHub release
+
+### Manual Building
+
+To build the extension locally:
+
+```bash
+npm install
+npm run lint
+npm run build
+```
+
+The built extension will be in the `web-ext-artifacts/` directory.
+
+### Release Process
+
+1. Update the version in `manifest.json`
+2. Commit changes
+3. Create and push a tag:
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+4. The GitHub Actions workflow will create a release with the built artifacts
+
 ## Notes
 
 - The native host must be executable (`chmod +x native/native_host.js`).
@@ -107,4 +141,4 @@ You can change the port via the options page, or edit `native/native_host.js` an
 
 ## License
 
-ISC
+Apache 2.0
