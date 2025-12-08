@@ -4,10 +4,11 @@ This Firefox extension exposes a REST API on localhost to interact with browser 
 
 ## Features
 
-- **GET /windows** - Returns information about all windows and their tabs
-- **GET /tabs** - Returns information about all tabs across all windows
-- **POST /switch-tab** - Switches to a specific tab by ID
-- **POST /open-url** - Opens a URL in a new tab (optionally in a specific window)
+ - **GET /windows** - Returns information about all windows and their tabs
+ - **GET /tabs** - Returns information about all tabs across all windows
+ - **POST /switch-tab** - Switches to a specific tab by ID
+ - **POST /open-url** - Opens a URL in a new tab (optionally in a specific window)
+ - **POST /close-tab** - Closes a tab by ID
 
 ## Architecture
 
@@ -64,6 +65,11 @@ curl -X POST -H "Content-Type: application/json" -d '{"url": "https://example.co
  **Open a URL in a specific window:**
 ```bash
 curl -X POST -H "Content-Type: application/json" -d '{"url": "https://example.com", "windowId": 2}' http://localhost:8090/open-url
+```
+
+ **Close a tab by ID:**
+```bash
+curl -X POST -H "Content-Type: application/json" -d '{"tabId": 123}' http://localhost:8090/close-tab
 ```
 
 **With API Token (if enabled):**

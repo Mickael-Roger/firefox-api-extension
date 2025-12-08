@@ -12,8 +12,9 @@
 
 ## API Documentation
 - OpenAPI specification: `openapi.yaml` (OpenAPI 3.1.0)
-- Documents all endpoints: `/windows`, `/tabs`, `/switch-tab`, `/open-url`
-- Includes request/response schemas and authentication details
+ - Documents all endpoints: `/windows`, `/tabs`, `/switch-tab`, `/open-url`, `/close-tab`
+ - Includes request/response schemas and authentication details
+ - Close tab endpoint returns 404 for non-existent tabs
 - Authentication is optional (Bearer token via Authorization or X-API-Token header)
 
 ## CI/CD Workflow (.github/workflows/build-release.yml)

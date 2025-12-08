@@ -74,6 +74,8 @@ async function routeRequest(requestId, method, path, body) {
       response = await handleSwitchTab(body);
     } else if (method === 'POST' && path === '/open-url') {
       response = await handleOpenUrl(body);
+    } else if (method === 'POST' && path === '/close-tab') {
+      response = await handleCloseTab(body);
     } else {
       response = { status: 404, contentType: 'text/plain', body: 'Endpoint not found' };
     }
@@ -139,6 +141,20 @@ async function handleOpenUrl(body) {
   }
   await browser.tabs.create(createProperties);
   return { status: 200, contentType: 'text/plain', body: 'Tab opened' };
+}
+
+async function handleCloseTab(body) {
+  const params = JSON.parse(body);
+  const tabId = params.tabId;
+  if (typeof tabId !== 'number') {
+    return { status: 400, contentType: 'text/plain', body: 'Missing or invalid tabId' };
+  }
+  try {
+    await browser.tabs.remove(tabId);
+  } catch (error) {
+    return { status: 404, contentType: 'text/plain', body: 'Tab not found' };
+  }
+  return { status: 200, contentType: 'text/plain', body: 'Tab closed' };
 }
 
 function sendNativeResponse(requestId, response) {

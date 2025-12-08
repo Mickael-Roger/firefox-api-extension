@@ -123,6 +123,45 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
+  /close-tab:
+    post:
+      tags:
+        - Tabs
+      summary: Close a tab
+      description: Closes the tab with the given ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseTabRequest'
+      responses:
+        '200':
+          description: Tab successfully closed
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Tab closed
+        '400':
+          description: Bad request - missing or invalid tabId
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Missing or invalid tabId
+        '404':
+          description: Tab not found
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Tab not found
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   schemas:
     Window:
@@ -209,6 +248,16 @@ components:
           example: 2
       required:
         - url
+
+    CloseTabRequest:
+      type: object
+      properties:
+        tabId:
+          type: integer
+          description: ID of the tab to close
+          example: 123
+      required:
+        - tabId
 
   responses:
     UnauthorizedError:
