@@ -94,6 +94,14 @@ The extension includes an options page for configuration:
 2. Go to the "Options" tab
 3. Configure the API port (default: 8090) and optional API token
 
+Settings are stored in a JSON file managed by the native host (not in Firefox storage).  
+Location:
+- Linux: `~/.config/firefox-api-extension/config.json`
+- Windows: `%APPDATA%\firefox-api-extension\config.json`
+- macOS: `~/Library/Application Support/firefox-api-extension/config.json`
+
+File permissions are set to owner‑read/write only (0600) to protect the API token.
+
 #### API Token Authentication
 
 If an API token is set in the options:

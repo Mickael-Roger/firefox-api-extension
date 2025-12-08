@@ -3,14 +3,14 @@ document.addEventListener('DOMContentLoaded', loadSettings);
 
 async function loadSettings() {
   try {
-    const result = await browser.storage.local.get(['port', 'apiToken']);
+    const response = await browser.runtime.sendMessage({ type: 'getConfig' });
     
-    if (result.port !== undefined) {
-      document.getElementById('port').value = result.port;
-    }
-    
-    if (result.apiToken !== undefined) {
-      document.getElementById('apiToken').value = result.apiToken;
+    if (response.success) {
+      document.getElementById('port').value = response.config.port;
+      document.getElementById('apiToken').value = response.config.apiToken;
+    } else {
+      console.error('Failed to load config from background:', response.error);
+      showStatus('Error loading settings', 'error');
     }
   } catch (error) {
     console.error('Failed to load settings:', error);
@@ -30,20 +30,16 @@ async function saveSettings() {
   }
   
   try {
-    await browser.storage.local.set({
-      port: port,
-      apiToken: apiToken
-    });
-    
-    showStatus('Settings saved successfully. Restart the native host for changes to take effect.', 'success');
-    
-    // Notify background script about configuration change
-    browser.runtime.sendMessage({
+    const response = await browser.runtime.sendMessage({
       type: 'configUpdated',
       config: { port, apiToken }
-    }).catch(() => {
-      // Background script might not be listening, that's ok
     });
+    
+    if (response.success) {
+      showStatus('Settings saved successfully. Restart the native host for changes to take effect.', 'success');
+    } else {
+      showStatus(`Error saving settings: ${response.error}`, 'error');
+    }
   } catch (error) {
     console.error('Failed to save settings:', error);
     showStatus('Error saving settings', 'error');

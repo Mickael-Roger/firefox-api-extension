@@ -10,6 +10,16 @@
 - Token authentication is optional but validated when set
 - Port must be configurable (default 8090, range 1024-65535)
 
+## Configuration Storage
+- Configuration (port and API token) is stored in a JSON file managed by the native host, not in Firefox storage
+- File location (OS-specific):
+  - Linux: `~/.config/firefox-api-extension/config.json`
+  - Windows: `%APPDATA%\firefox-api-extension\config.json`
+  - macOS: `~/Library/Application Support/firefox-api-extension/config.json`
+- File permissions: 0600 (owner read/write only) to protect API token
+- Extension options page communicates with background script, which forwards config operations to native host
+- Fallback: If native host is unavailable, extension attempts to read from `browser.storage.local` (legacy)
+
 ## API Documentation
 - OpenAPI specification: `openapi.yaml` (OpenAPI 3.1.0)
  - Documents all endpoints: `/windows`, `/tabs`, `/switch-tab`, `/open-url`, `/close-tab`
@@ -28,6 +38,7 @@
 - GitHub Actions default GITHUB_TOKEN may lack write permissions for releases; need to adjust repository settings or add `permissions: contents: write`
 - web-ext 9.2.0 has compatibility issues with Node.js 20; pin to 8.2.0
 - Extension and native host must be distributed separately due to security restrictions
+- Configuration should be stored in a native‑host‑managed file outside Firefox profile when profile is read‑only (e.g., system‑wide installations)
 
 ## See Also
 - [README.md](README.md) for installation and usage

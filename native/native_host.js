@@ -3,13 +3,76 @@
 
 const http = require('http');
 const url = require('url');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+function getConfigPath() {
+  const homedir = os.homedir();
+  const platform = os.platform();
+  
+  let configDir;
+  if (platform === 'win32') {
+    configDir = path.join(homedir, 'AppData', 'Roaming', 'firefox-api-extension');
+  } else if (platform === 'darwin') {
+    configDir = path.join(homedir, 'Library', 'Application Support', 'firefox-api-extension');
+  } else {
+    configDir = path.join(homedir, '.config', 'firefox-api-extension');
+  }
+  
+  return path.join(configDir, 'config.json');
+}
 
 const HOST = '127.0.0.1';
 
-let config = {
-  port: 8090,
-  apiToken: ''
-};
+function loadConfigFromFile() {
+  const configPath = getConfigPath();
+  const defaults = {
+    version: 1,
+    port: 8090,
+    apiToken: ''
+  };
+  
+  try {
+    if (!fs.existsSync(configPath)) {
+      return defaults;
+    }
+    
+    const data = fs.readFileSync(configPath, 'utf8');
+    const loaded = JSON.parse(data);
+    
+    // Merge with defaults to ensure all fields exist
+    return { ...defaults, ...loaded };
+  } catch (error) {
+    console.error(`Error loading config from ${configPath}:`, error);
+    return defaults;
+  }
+}
+
+function saveConfigToFile(newConfig) {
+  const configPath = getConfigPath();
+  const configDir = path.dirname(configPath);
+  
+  try {
+    // Ensure directory exists
+    if (!fs.existsSync(configDir)) {
+      fs.mkdirSync(configDir, { recursive: true, mode: 0o700 });
+    }
+    
+    // Ensure version field
+    const configToSave = { version: 1, ...newConfig };
+    
+    // Write file with pretty formatting
+    fs.writeFileSync(configPath, JSON.stringify(configToSave, null, 2), { mode: 0o600 });
+    console.error(`Config saved to ${configPath}`);
+    return true;
+  } catch (error) {
+    console.error(`Error saving config to ${configPath}:`, error);
+    return false;
+  }
+}
+
+let config = loadConfigFromFile();
 
 let server = null;
 let nextRequestId = 1;
@@ -42,6 +105,27 @@ function handleExtensionMessage(message) {
     return;
   }
   
+  if (message.type === 'getConfig') {
+    sendNativeMessage({
+      type: 'configResponse',
+      requestId: message.requestId,
+      success: true,
+      config: config
+    });
+    return;
+  }
+  
+  if (message.type === 'setConfig') {
+    const success = handleConfigUpdate(message.config);
+    sendNativeMessage({
+      type: 'configResponse',
+      requestId: message.requestId,
+      success: success,
+      config: config
+    });
+    return;
+  }
+  
   const { requestId, response, error } = message;
   const pending = pendingRequests.get(requestId);
   if (!pending) {
@@ -65,12 +149,22 @@ function handleConfigUpdate(newConfig) {
   const portChanged = newConfig.port !== config.port;
   config = { ...config, ...newConfig };
   
+  // Save to file
+  const saved = saveConfigToFile(config);
+  if (saved) {
+    console.error('Config saved to file');
+  } else {
+    console.error('Failed to save config to file');
+  }
+  
   if (portChanged) {
     console.error(`Port changed from ${config.port} to ${newConfig.port}, restarting server...`);
     restartServer();
   } else {
     console.error('Config updated (no port change)');
   }
+  
+  return saved;
 }
 
 function createServer() {

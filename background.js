@@ -5,8 +5,68 @@ let config = {
   port: 8090,
   apiToken: ''
 };
+let configRequestCallbacks = new Map();
+let nextConfigRequestId = 1;
+
+function sendConfigRequest(type, configData) {
+  return new Promise((resolve, reject) => {
+    if (!port) {
+      reject(new Error('Native host not connected'));
+      return;
+    }
+    
+    const requestId = nextConfigRequestId++;
+    configRequestCallbacks.set(requestId, { resolve, reject });
+    
+    // Timeout after 5 seconds
+    setTimeout(() => {
+      if (configRequestCallbacks.has(requestId)) {
+        configRequestCallbacks.delete(requestId);
+        reject(new Error('Config request timeout'));
+      }
+    }, 5000);
+    
+    const message = { type, requestId };
+    if (configData) {
+      message.config = configData;
+    }
+    
+    port.postMessage(message);
+  });
+}
+
+function handleConfigResponse(message) {
+  const { requestId, success, config: newConfig } = message;
+  const callback = configRequestCallbacks.get(requestId);
+  
+  if (callback) {
+    configRequestCallbacks.delete(requestId);
+    if (success) {
+      // Update global config
+      config = { ...config, ...newConfig };
+      callback.resolve(newConfig);
+    } else {
+      callback.reject(new Error('Config operation failed'));
+    }
+  } else {
+    console.error('Received config response for unknown request ID:', requestId);
+  }
+}
 
 async function loadConfig() {
+  // Try to get config from native host first
+  if (port) {
+    try {
+      const newConfig = await sendConfigRequest('getConfig');
+      config = { ...config, ...newConfig };
+      console.log('Loaded config from native host:', config);
+      return;
+    } catch (error) {
+      console.error('Failed to load config from native host, falling back to storage:', error);
+    }
+  }
+  
+  // Fallback to storage.local
   try {
     const stored = await browser.storage.local.get(['port', 'apiToken']);
     if (stored.port !== undefined) {
@@ -15,27 +75,35 @@ async function loadConfig() {
     if (stored.apiToken !== undefined) {
       config.apiToken = stored.apiToken;
     }
-    console.log('Loaded config:', config);
+    console.log('Loaded config from storage:', config);
   } catch (error) {
-    console.error('Failed to load config:', error);
+    console.error('Failed to load config from storage:', error);
   }
 }
 
-function sendConfigToNativeHost() {
+async function sendConfigToNativeHost() {
   if (!port) {
     console.error('No native host connection to send config');
     return;
   }
-  port.postMessage({
-    type: 'config',
-    config: config
-  });
+  
+  // Try new setConfig message first
+  try {
+    await sendConfigRequest('setConfig', config);
+    console.log('Config sent to native host via setConfig');
+  } catch (error) {
+    console.error('Failed to send config via setConfig, falling back to old message:', error);
+    // Fallback to old config message for backward compatibility
+    port.postMessage({
+      type: 'config',
+      config: config
+    });
+  }
 }
 
 async function connectToNativeHost() {
   console.log('Attempting to connect to native host...');
   try {
-    await loadConfig();
     port = browser.runtime.connectNative(HOST_NAME);
     console.log('Connected to native host');
     
@@ -46,7 +114,10 @@ async function connectToNativeHost() {
       setTimeout(connectToNativeHost, 1000);
     });
     
-    // Send configuration to native host
+    // Load configuration (will try native host first, then storage)
+    await loadConfig();
+    
+    // Send configuration to native host (migration from storage to file)
     setTimeout(sendConfigToNativeHost, 100);
   } catch (error) {
     console.error('Failed to connect to native host:', error);
@@ -55,6 +126,11 @@ async function connectToNativeHost() {
 }
 
 function handleNativeMessage(message) {
+  if (message.type === 'configResponse') {
+    handleConfigResponse(message);
+    return;
+  }
+  
   const { requestId, method, path, query, headers, body } = message;
   console.log(`Received request ${requestId}: ${method} ${path}, body length: ${body ? body.length : 0}`);
   
@@ -173,15 +249,34 @@ function sendNativeResponse(requestId, response) {
 }
 
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'getConfig') {
+    sendResponse({ success: true, config: config });
+    return true;
+  }
+  
   if (message.type === 'configUpdated') {
     console.log('Config updated from options page');
-    loadConfig().then(() => {
-      sendConfigToNativeHost();
-      sendResponse({ success: true });
-    }).catch(error => {
-      console.error('Failed to reload config:', error);
-      sendResponse({ success: false, error: error.message });
-    });
+    const { port, apiToken } = message.config;
+    
+    // Validate port
+    if (isNaN(port) || port < 1024 || port > 65535) {
+      sendResponse({ success: false, error: 'Port must be a number between 1024 and 65535' });
+      return true;
+    }
+    
+    // Send to native host
+    sendConfigRequest('setConfig', { port, apiToken })
+      .then(newConfig => {
+        // Update local config with response from native host
+        config = { ...config, ...newConfig };
+        sendResponse({ success: true });
+      })
+      .catch(error => {
+        console.error('Failed to save config to native host:', error);
+        // Fallback to old behavior (will likely fail on read-only storage)
+        sendResponse({ success: false, error: error.message });
+      });
+    
     return true;
   }
 });
