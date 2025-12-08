@@ -10,7 +10,7 @@ info:
 
 servers:
   - url: http://localhost:8090
-    description: Default localhost server (port configurable via extension options)
+    description: Default localhost server (port fixed at 8090)
 
 tags:
   - name: Windows
@@ -34,8 +34,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Window'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -54,8 +52,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Tab'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -86,8 +82,6 @@ paths:
               schema:
                 type: string
                 example: Missing or invalid tabId
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -118,8 +112,6 @@ paths:
               schema:
                 type: string
                 example: Missing url
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -157,8 +149,6 @@ paths:
               schema:
                 type: string
                 example: Tab not found
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -260,13 +250,7 @@ components:
         - tabId
 
   responses:
-    UnauthorizedError:
-      description: Unauthorized - invalid or missing API token
-      content:
-        text/plain:
-          schema:
-            type: string
-            example: 'Unauthorized: Invalid or missing API token'
+
 
     InternalServerError:
       description: Internal server error

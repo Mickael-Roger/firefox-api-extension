@@ -3,76 +3,9 @@
 
 const http = require('http');
 const url = require('url');
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-
-function getConfigPath() {
-  const homedir = os.homedir();
-  const platform = os.platform();
-  
-  let configDir;
-  if (platform === 'win32') {
-    configDir = path.join(homedir, 'AppData', 'Roaming', 'firefox-api-extension');
-  } else if (platform === 'darwin') {
-    configDir = path.join(homedir, 'Library', 'Application Support', 'firefox-api-extension');
-  } else {
-    configDir = path.join(homedir, '.config', 'firefox-api-extension');
-  }
-  
-  return path.join(configDir, 'config.json');
-}
 
 const HOST = '127.0.0.1';
-
-function loadConfigFromFile() {
-  const configPath = getConfigPath();
-  const defaults = {
-    version: 1,
-    port: 8090,
-    apiToken: ''
-  };
-  
-  try {
-    if (!fs.existsSync(configPath)) {
-      return defaults;
-    }
-    
-    const data = fs.readFileSync(configPath, 'utf8');
-    const loaded = JSON.parse(data);
-    
-    // Merge with defaults to ensure all fields exist
-    return { ...defaults, ...loaded };
-  } catch (error) {
-    console.error(`Error loading config from ${configPath}:`, error);
-    return defaults;
-  }
-}
-
-function saveConfigToFile(newConfig) {
-  const configPath = getConfigPath();
-  const configDir = path.dirname(configPath);
-  
-  try {
-    // Ensure directory exists
-    if (!fs.existsSync(configDir)) {
-      fs.mkdirSync(configDir, { recursive: true, mode: 0o700 });
-    }
-    
-    // Ensure version field
-    const configToSave = { version: 1, ...newConfig };
-    
-    // Write file with pretty formatting
-    fs.writeFileSync(configPath, JSON.stringify(configToSave, null, 2), { mode: 0o600 });
-    console.error(`Config saved to ${configPath}`);
-    return true;
-  } catch (error) {
-    console.error(`Error saving config to ${configPath}:`, error);
-    return false;
-  }
-}
-
-let config = loadConfigFromFile();
+const PORT = 8090;
 
 let server = null;
 let nextRequestId = 1;
@@ -83,46 +16,48 @@ function sendNativeMessage(message) {
   const buffer = Buffer.from(json, 'utf8');
   const header = Buffer.alloc(4);
   header.writeUInt32LE(buffer.length, 0);
+  console.error('Sending message type:', message.type, 'length:', buffer.length);
   process.stdout.write(header);
   process.stdout.write(buffer);
 }
 
+let inputBuffer = Buffer.alloc(0);
+
 function readNativeMessage() {
-  const header = process.stdin.read(4);
-  if (header === null) return;
-  const length = header.readUInt32LE(0);
-  const data = process.stdin.read(length);
-  if (data === null) return;
-  const message = JSON.parse(data);
-  handleExtensionMessage(message);
+  let chunk;
+  while ((chunk = process.stdin.read()) !== null) {
+    inputBuffer = Buffer.concat([inputBuffer, chunk]);
+  }
+  
+  while (inputBuffer.length >= 4) {
+    const length = inputBuffer.readUInt32LE(0);
+    
+    if (inputBuffer.length < 4 + length) {
+      // Don't have full message yet
+      break;
+    }
+    
+    const messageData = inputBuffer.slice(4, 4 + length);
+    inputBuffer = inputBuffer.slice(4 + length);
+    
+    try {
+      const message = JSON.parse(messageData.toString('utf8'));
+      console.error('Parsed message type:', message.type);
+      handleExtensionMessage(message);
+    } catch (error) {
+      console.error('Error parsing message:', error);
+    }
+  }
 }
 
 process.stdin.on('readable', readNativeMessage);
 
 function handleExtensionMessage(message) {
-  if (message.type === 'config') {
-    handleConfigUpdate(message.config);
-    return;
-  }
+  console.error('Received message type:', message.type);
   
-  if (message.type === 'getConfig') {
-    sendNativeMessage({
-      type: 'configResponse',
-      requestId: message.requestId,
-      success: true,
-      config: config
-    });
-    return;
-  }
-  
-  if (message.type === 'setConfig') {
-    const success = handleConfigUpdate(message.config);
-    sendNativeMessage({
-      type: 'configResponse',
-      requestId: message.requestId,
-      success: success,
-      config: config
-    });
+  // Ignore config messages (none expected in simplified version)
+  if (message.type) {
+    console.error('Ignoring message type:', message.type);
     return;
   }
   
@@ -143,44 +78,8 @@ function handleExtensionMessage(message) {
   }
 }
 
-function handleConfigUpdate(newConfig) {
-  console.error('Received config update:', newConfig);
-  
-  const portChanged = newConfig.port !== config.port;
-  config = { ...config, ...newConfig };
-  
-  // Save to file
-  const saved = saveConfigToFile(config);
-  if (saved) {
-    console.error('Config saved to file');
-  } else {
-    console.error('Failed to save config to file');
-  }
-  
-  if (portChanged) {
-    console.error(`Port changed from ${config.port} to ${newConfig.port}, restarting server...`);
-    restartServer();
-  } else {
-    console.error('Config updated (no port change)');
-  }
-  
-  return saved;
-}
-
 function createServer() {
   return http.createServer((req, res) => {
-    // Validate API token if configured
-    if (config.apiToken && config.apiToken.trim() !== '') {
-      const token = req.headers['x-api-token'] || req.headers['authorization'];
-      const expected = `Bearer ${config.apiToken}`;
-      
-      if (!token || token !== expected) {
-        res.writeHead(401, { 'Content-Type': 'text/plain' });
-        res.end('Unauthorized: Invalid or missing API token');
-        return;
-      }
-    }
-    
     const parsedUrl = url.parse(req.url, true);
     const requestId = nextRequestId++;
     
@@ -213,11 +112,8 @@ function startServer() {
   
   server = createServer();
   
-  server.listen(config.port, HOST, () => {
-    console.error(`Native host HTTP server listening on ${HOST}:${config.port}`);
-    if (config.apiToken && config.apiToken.trim() !== '') {
-      console.error('API token authentication is enabled');
-    }
+  server.listen(PORT, HOST, () => {
+    console.error(`Native host HTTP server listening on ${HOST}:${PORT}`);
   });
   
   server.on('error', (err) => {
@@ -242,12 +138,16 @@ function stopServer(callback) {
   });
 }
 
-function restartServer() {
-  stopServer(startServer);
-}
-
 // Initial server start
 startServer();
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled rejection at:', promise, 'reason:', reason);
+});
 
 process.on('SIGINT', () => {
   stopServer(() => {

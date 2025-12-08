@@ -3,5 +3,5 @@
   "description": "Native host for Firefox REST API extension",
   "path": "@NATIVE_HOST_PATH@",
   "type": "stdio",
-  "allowed_extensions": ["firefox-api-extension@example.com"]
+  "allowed_extensions": ["firefox-api-extension@famille-roger.com"]
 }

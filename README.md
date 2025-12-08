@@ -72,11 +72,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"url": "https://example.co
 curl -X POST -H "Content-Type: application/json" -d '{"tabId": 123}' http://localhost:8090/close-tab
 ```
 
-**With API Token (if enabled):**
-```bash
-curl -H "Authorization: Bearer your-token-here" http://localhost:8090/windows
-curl -H "X-API-Token: Bearer your-token-here" http://localhost:8090/tabs
-```
+**Authentication is disabled** – all endpoints are accessible without authentication.
 
 ## Development
 
@@ -88,30 +84,9 @@ curl -H "X-API-Token: Bearer your-token-here" http://localhost:8090/tabs
 
 ### Configuration
 
-The extension includes an options page for configuration:
-
-1. Right-click the extension icon in Firefox toolbar and select "Manage Extension"
-2. Go to the "Options" tab
-3. Configure the API port (default: 8090) and optional API token
-
-Settings are stored in a JSON file managed by the native host (not in Firefox storage).  
-Location:
-- Linux: `~/.config/firefox-api-extension/config.json`
-- Windows: `%APPDATA%\firefox-api-extension\config.json`
-- macOS: `~/Library/Application Support/firefox-api-extension/config.json`
-
-File permissions are set to owner‑read/write only (0600) to protect the API token.
-
-#### API Token Authentication
-
-If an API token is set in the options:
-- All API requests must include the token in the `Authorization` header as a Bearer token
-- Example: `Authorization: Bearer your-token-here`
-- Requests without a valid token will receive a 401 Unauthorized response
-
-### Changing the HTTP port
-
-You can change the port via the options page, or edit `native/native_host.js` and change the default `port` in the config object (line 8). Ensure the port is free.
+- Port is fixed at 8090 (not configurable)
+- Authentication is disabled (no API token required)
+- No configuration file or options page
 
 ## Building and Releasing
 
