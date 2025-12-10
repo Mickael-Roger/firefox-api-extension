@@ -20,7 +20,7 @@
       "id": "firefox-api-extension@famille-roger.com",
       "data_collection_permissions": {
         "collects_diagnostic_data": false,
-        "required": false
+        "required": ["none"]
       }
     }
   },
