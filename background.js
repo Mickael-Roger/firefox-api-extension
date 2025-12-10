@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 const HOST_NAME = 'firefox_api_extension';
-let port = 8090;
+let port = null;
 
 async function connectToNativeHost() {
   console.log('Attempting to connect to native host...');
