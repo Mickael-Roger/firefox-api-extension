@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Firefox REST API",
-  "version": "1.0.8",
+  "version": "1.0.10",
   "description": "Exposes a REST API for managing windows and tabs",
 
   "browser_specific_settings": {
