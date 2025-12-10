@@ -83,26 +83,12 @@ jobs:
           cp "$XPI_FILE" "$ZIP_FILE"
         fi
 
-    # ✅ Native host package stays unchanged
-    - name: Create native host package
-      run: |
-        mkdir -p native-package
-        cp -r native/ native-package/
-        cp install-host.sh native-package/
-        cp README.md native-package/
-        chmod +x native-package/native/native_host.js
-        chmod +x native-package/install-host.sh
-        cd native-package
-        tar -czvf ../native-host-v${{ steps.version.outputs.version }}.tar.gz .
-        cd ..
-
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: firefox-api-extension-v${{ steps.version.outputs.version }}
         path: |
           web-ext-artifacts/
-          native-host-v${{ steps.version.outputs.version }}.tar.gz
         retention-days: 7
 
     - name: Create GitHub Release
