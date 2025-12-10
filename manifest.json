@@ -1,5 +1,5 @@
 {
-  "manifest_version": 3,
+  "manifest_version": 2,
   "name": "Firefox REST API",
   "version": "1.0.10",
   "description": "Exposes a REST API for managing windows and tabs",
@@ -20,7 +20,8 @@
   },
 
   "background": {
-    "service_worker": "background.js"
+    "service_worker": ["background.js"],
+    "type": "module"
   }
 }
 
