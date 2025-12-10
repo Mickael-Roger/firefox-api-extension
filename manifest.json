@@ -1,12 +1,12 @@
 {
   "manifest_version": 2,
-  "name": "Firefox REST API",
+  "name": "FF REST API",
   "version": "1.0.10",
   "description": "Exposes a REST API for managing windows and tabs",
 
   "browser_specific_settings": {
     "gecko": {
-      "id": "firefox-api-extension@famille-roger.com"
+      "id": "ff-api-extension@famille-roger.com"
     }
   },
 
@@ -17,7 +17,7 @@
 
   "browser_specific_settings": {
     "gecko": {
-      "id": "firefox-api-extension@famille-roger.com",
+      "id": "ff-api-extension@famille-roger.com",
       "data_collection_permissions": {
         "collects_diagnostic_data": false,
         "required": ["none"]
