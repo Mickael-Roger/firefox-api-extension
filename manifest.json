@@ -15,13 +15,17 @@
     "nativeMessaging"
   ],
 
-  "data_collection_permissions": {
-    "collects_diagnostic_data": false
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "firefox-api-extension@famille-roger.com",
+      "data_collection_permissions": {
+        "collects_diagnostic_data": false
+      }
+    }
   },
 
   "background": {
-    "service_worker": ["background.js"],
-    "type": "module"
+    "scripts": ["background.js"]
   }
 }
 
